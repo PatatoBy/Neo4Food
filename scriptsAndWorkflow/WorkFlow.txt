@@ -1,0 +1,153 @@
+OSSERVAZIONI IMPORTANTI:
+ - Il file index.jsp ha un refresh interno che chiama il servlet '/shop'
+ - Il servlet '/shop' e' la classe controller.ShopServlet
+ - Tale classe fa una richiesta usando DTO, poi inoltra il risultato alla pagina WEB-INF/template/shop.jsp
+ - La pagina riceve un DTO e stampa il risultato
+ - Tutte le pabine in WEB-INF/template sono appunto template che visualizzano i dati raccolti dai servlet nel package it.unipi.controller
+ ---- DAO sono le classi usate nel back-end e nel trasferimento con i DBMS
+ ---- DTO sono le classi usate esclusivamente per far interagire front-end e back-end
+
+DETTAGLI:
+
+1-	index.jsp chiama il servlet /shop (ShopServlet)
+2-	ShopServlet quando viene chiamata chiama ProductService
+3-	ProductService ritorna a /shop l'istanza (singleton?) di ProductServiceImpl
+4-	ProductServiceImpl quando inizializzata la prima volta richiama DAOLocator
+5-	DAOLocator ritorna quindi l'istanza singleton ProductMySQLDAO
+6-	ProductServiceImpl richiama listProductPage che fa richiesta al DBMS
+7-	ShopServlet ha ora una pageDTO che inoltra a shop.jsp
+8-	shop.jsp riceve l'oggetto pageDTO e lo usa per popolare la pagina
+
+RIGUARDO AI SERVLET:
+> Parameter - Sono campi read only impostati da chi invia il pacchetto richiesta
+> Attribute - Sono campi sia read che write, usati per mandare info nel frontend tra una pagina e laltra
+> Session - Campo persistente delle richieste, contiene cose riguardande alla sessione tra host e server
+
+---------------------
+
+ --- > DA FARE SU MONGODB < ---
+1) Funzione admin: se clicca il tasto, calcola il prezzo medio dei piatti nei ristoranti e aggiorna "price_range"
+2) Funzione admin: se clicca il tasto, calcola il miglior ristorante per zip_code e aggiorna "position"
+3) Funzione admin: se clicca il tasto, calcola lo score da neo4j e aggiorna lo score medio del ristorante su mongoDB
+
+ --- > DA FARE SU JAVA < ---
+1) Sistema raccomandazioni (Neo4J)
+2) Pagina aggiunta piatti (Ristorante)
+
+
+---CAMPI COLLECTIONS MONGODB---
+
+RESTAURANT - (  _id,
+                position,
+                nome,
+                category,
+                price_range,
+                full_address,
+                zip_code,
+                lat,
+                lon,
+                dish[],   ------------------------------------------>    DISH - (  _id,
+                email,                                                             category,
+                password,                                                          name,
+                pendingOrders[]  ------>  ORDER - (    _id,                        description,
+                                                       user,                       price,
+                                                                                   currency
+                                                       paymentMethod             )
+                                                       paymentNumber
+                                                       address
+                                                       zipcode
+                                                       total
+                                                       
+                                                       currency
+                                                       dishes[]       ------->     DISH - (  
+                                                   )                                         name,
+                                                                                             quantity
+                                                                                           )
+
+#######################################################################################################################
+
+UTENTE - (   _id,
+             firstname,
+             lastname,
+             username,
+             email,
+             phonenumber,
+             address,
+             zipcode,
+             password,
+             paymentMethod,
+             paymentNumber
+          )
+
+########################################################################################################################
+
+ORDINI - ( _id,
+           user,
+           restaurant,
+           restaurantId,
+           paymentMethod,
+           paymentNumber,
+           address,
+           zipcode,
+           total,
+           status,
+           dishes[]    --------->     DISH - (
+         )                                      name,
+                                                price,
+                                                currency,
+                                                quantity
+                                              )
+
+
+
+
+############################################ Ricevimento José #######################################################
+
+2)  Model solo per bellezza! (DA CONTROLLARE SE VA BENE COSI COME E' FATTO)
+        -Usare il tool di IntelliJ per fare il diagramma delle classi
+
+5)  Valutare le performance della VM con htop
+
+6)  OPTIONAL
+        - Modifica piatti ristorante
+        - WebSocket notifica nuovi ordini ricevuti dal ristorante
+
+Cosiderazioni
+
+1)  Composizione del nodo Restaurant (Neo4J)
+        - _id(di mongo)
+        - Name
+        - Zip_code
+        - AVG(rate)
+
+2)  I nodi Users vengono aggiunti quando un utente vota/recensisce un ristorante per la prima volta
+        - Anche i nodi ristoranti vengono inseriti quando vengono votati per la prima volta
+        - Se gli utenti vengono inseriti quando votano per la prima volta, da definire come cercare
+                utenti per inserirli tra i seguiti (magari cerco e trovo solo quelli che non sono seguiti)
+
+3)  Consigliati
+        - Schermare i ristoranti per zip_code della ricerca
+        - Andare a guardare i ristoranti, in quel zip_code, che gli amici hanno recensito (bene?)
+        - Se non trovo nessun ristorante, prendo i supernodi in quel zip_code
+
+4)  Coordinare i vari database e mettere dati più "realistici"
+
+5)  Demone che aggiurna i valori fra MongoDB e Neo4J
+
+
+-----------------------------------------
+
+Aggregazione setAvgPrices (Mongo): FATTO
+        - Rimuovere sort e project, non servono a niente e occupano 6 secondi
+
+Aggregazione setAvgRate (Neo):
+        - Dovrebbe andare bene cosi
+
+Aggregazione getOrdersPerZip (Mongo): FATTO
+        - Togliere il project, non serve a nulla e occupa 200ms
+
+Aggregazione getLastMonthProfits (Mongo): FATTO
+        - Togliere il project, non serve a nulla e occupa 300ms
+
+Aggregazione getCaviale (Mongo):
+        - Dovrebbe andare bene cosi
